@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sqls>
+  <sql name="tbs" desc="表名"><![CDATA[
+select tablename table_name
+  from pg_tables
+ where schemaname='public'
+  ]]></sql>
+  
+  <sql name="cols" desc="字段信息"><![CDATA[
+select column_name,
+       case when data_type='character varying' then 'varchar(' || character_maximum_length || ')'
+            when data_type='integer' and nullif(column_default, '') like 'nextval%' then 'serial'
+            when data_type='integer' then 'int'
+            when data_type like '%int' and nullif(column_default, '') like 'nextval%' then replace(data_type, 'int', 'serial')
+            when data_type='numeric' then data_type || '(' || numeric_precision || ',' || numeric_scale || ')'
+            else data_type
+        end data_type, is_nullable
+  from information_schema.columns
+ where table_schema='public'
+   and table_name=?
+  ]]></sql>
+  
+  <sql name="idxes" desc="索引信息"><![CDATA[
+select t.relname table_name, i.relname idx_name, ix.indisunique, string_agg(a.attname, ',' order by ix.indnatts) idx_cols
+  from pg_class t, pg_class i, pg_index ix, pg_attribute a
+ where t.oid = ix.indrelid
+   and i.oid = ix.indexrelid
+   and a.attrelid = t.oid
+   and a.attnum = ANY(ix.indkey)
+   and t.relkind = 'r'
+   and t.relname=?
+   and i.relname not like '%_pkey'
+   and i.relname not like '%_key'
+ group by t.relname, i.relname, ix.indisunique
+ order by t.relname, i.relname
+  ]]></sql>
+</sqls>

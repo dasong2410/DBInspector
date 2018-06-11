@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sqls>
+  <sql name="tbs" desc="表名"><![CDATA[
+select table_name from user_tables
+  ]]></sql>
+  
+  <sql name="cols" desc="字段信息"><![CDATA[
+select column_name,
+       case when data_type='VARCHAR2' or data_type='NVARCHAR2' or data_type='CHAR' then data_type || '(' || data_length || ')'
+            when data_type like '_LOB' then data_type when data_type like 'DATE' then data_type
+            when data_type='NUMBER' and data_precision is null and data_scale is null then data_type
+            when data_type='NUMBER' and data_precision is null and data_scale=0 then 'INTEGER'
+            when data_type='NUMBER' and data_precision is not null and data_scale is not null then 'NUMBER' || '(' || data_precision || decode(data_scale, 0, null, ',' || data_scale) || ')'
+        end data_type,
+       decode(nullable, 'Y', 'YES', 'N', 'NO') nullable
+  from user_tab_cols
+ where table_name=?
+ order by column_id
+  ]]></sql>
+  
+  <sql name="idxes" desc="索引信息"><![CDATA[
+select index_name idx_name, listagg(column_name, ',') within group(order by column_position) idx_cols
+  from user_ind_columns
+ where table_name=?
+ group by index_name
+ order by index_name
+  ]]></sql>
+</sqls>
